@@ -1,18 +1,21 @@
 use std::{
+    collections::HashMap,
     fmt::{self, Formatter},
     io,
 };
 
+use rand::Rng;
+
 use super::palavra::PalavraComparavel;
 
-pub struct Jogo {
-    palavra_comp: PalavraComparavel,
-    palavra_disp: String,
+pub struct Jogo<'a> {
+    banco_de_palavras: &'a HashMap<String, String>,
+    palavra: PalavraComparavel,
     tentativas: Vec<PalavraComparavel>,
     qtde_tentativas: usize,
 }
 
-impl fmt::Display for Jogo {
+impl fmt::Display for Jogo<'_> {
     // printa tudo bonitinho ou algo do tipo
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let mut ret = String::from("");
@@ -30,23 +33,17 @@ impl fmt::Display for Jogo {
     }
 }
 
-impl Jogo {
-    pub fn cria(palavra: String, qtde_tentativas: usize) -> Self {
-        let palavra_comp;
-        let palavra_disp;
-
-        if palavra.contains(",") {
-            let mut parts = palavra.split(",");
-            palavra_comp = PalavraComparavel::cria(parts.next().unwrap().to_string());
-            palavra_disp = parts.next().unwrap().to_string();
-        } else {
-            palavra_comp = PalavraComparavel::cria(palavra.clone());
-            palavra_disp = palavra.clone();
-        }
+impl<'a> Jogo<'a> {
+    pub fn cria(palavras: &'a HashMap<String, String>, qtde_tentativas: usize) -> Self {
+        let index_aleatorio = rand::thread_rng().gen_range(0..palavras.len());
+        let palavra = palavras.keys().nth(index_aleatorio).unwrap().clone();
 
         return Jogo {
-            palavra_comp,
-            palavra_disp,
+            banco_de_palavras: palavras,
+            palavra: PalavraComparavel::cria(
+                palavra.clone(),
+                palavras.get(&palavra).unwrap().clone(),
+            ),
             tentativas: vec![],
             qtde_tentativas,
         };
@@ -80,7 +77,7 @@ impl Jogo {
 
         println!("\x1B[2J\x1B[1;1H");
         println!("{}", self);
-        println!("perderdes. Era {}", self.palavra_disp);
+        println!("perderdes. Era {}", self.palavra);
     }
 
     fn tenta(&mut self, t: String) -> bool {
@@ -90,7 +87,12 @@ impl Jogo {
         }
 
         // TODO ver se é uma palavra aceita, ou seja, que está no arquivo de palavras
-        let tentativa = self.palavra_comp.compara(tentativa);
+        let palavra = self.banco_de_palavras.get(&tentativa);
+        if palavra.is_none() {
+            return false;
+        }
+
+        let tentativa = self.palavra.compara(tentativa, palavra.unwrap().clone());
         let ganhou = tentativa.esta_tudo_certo();
 
         self.tentativas.push(tentativa);

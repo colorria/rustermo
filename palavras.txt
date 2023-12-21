@@ -13,6 +13,8 @@ amplo
 antas
 aorta
 aptos
+arabe,árabe
+arara
 arroz
 astro
 ateus
@@ -150,6 +152,7 @@ sigla
 sinos
 sobra
 solta
+somar
 suico,suíço
 suino
 sulco

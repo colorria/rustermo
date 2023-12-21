@@ -1,4 +1,8 @@
-use std::fmt;
+use std::{collections::HashMap, fmt, vec};
+
+const VERDE: &str = "\x1b[32m";
+const AMARELO: &str = "\x1b[33m";
+const NORMAL: &str = "\x1b[0m";
 
 enum Precisao {
     LetraCertaPosicaoCerta,
@@ -6,80 +10,95 @@ enum Precisao {
     TudoErrado,
 }
 
-struct Letra {
-    letra: char,
-    precisao: Precisao,
-}
-
-impl Letra {
-    fn printa(&self) -> String {
-        let mut letra_colorida = match self.precisao {
-            Precisao::LetraCertaPosicaoCerta => String::from("\x1b[32m"),
-            Precisao::LetraCertaPosicaoErrada => String::from("\x1b[33m"),
-            Precisao::TudoErrado => String::from("\x1b[0m"),
+impl Precisao {
+    fn colore(&self, letra: char) -> String {
+        let mut letra_colorida = match &self {
+            Precisao::LetraCertaPosicaoCerta => String::from(VERDE),
+            Precisao::LetraCertaPosicaoErrada => String::from(AMARELO),
+            Precisao::TudoErrado => String::from(NORMAL),
         };
-        letra_colorida.push(self.letra);
-        letra_colorida.push_str("\x1b[0m");
+        letra_colorida.push(letra);
+        letra_colorida.push_str(NORMAL);
         return letra_colorida;
     }
 }
 
 pub struct PalavraComparavel {
     palavra: String,
-    letras: Vec<Letra>,
+    palavra_exibicao: String,
+    acertos: Vec<Precisao>,
 }
 
 impl fmt::Display for PalavraComparavel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut ret = String::from("");
+        let mut chars_exibicao = self.palavra_exibicao.chars();
 
-        self.letras.iter().for_each(|l| ret.push_str(&l.printa()));
+        for a in self.acertos.iter() {
+            ret.push_str(&a.colore(chars_exibicao.next().unwrap()));
+        }
 
         write!(f, "{}", ret)
     }
 }
 
 impl PalavraComparavel {
-    pub fn cria(palavra: String) -> Self {
-        let letras: Vec<Letra> = palavra
-            .chars()
-            .map(|letra| Letra {
-                letra,
-                precisao: Precisao::LetraCertaPosicaoCerta,
-            })
-            .collect();
-        return PalavraComparavel { palavra, letras };
+    pub fn cria(palavra: String, palavra_exibicao: String) -> Self {
+        let acertos: Vec<Precisao> = vec![];
+        return PalavraComparavel {
+            palavra,
+            palavra_exibicao,
+            acertos,
+        };
     }
 
-    pub fn compara(&self, palavra: String) -> Self {
-        let chars: Vec<char> = palavra.chars().collect();
-        let mut letras: Vec<Letra> = vec![];
+    fn pega_saldo_comparacao(&self) -> HashMap<char, isize> {
+        let mut saldo = HashMap::new();
+        for c in self.palavra.chars() {
+            saldo.entry(c).and_modify(|q| *q += 1).or_insert(1);
+        }
+        return saldo;
+    }
+
+    pub fn compara(&self, palavra: String, palavra_exibicao: String) -> Self {
+        let chars_tentativa: Vec<char> = palavra.chars().collect();
+        let chars_comp: Vec<char> = self.palavra.chars().collect();
+        let mut saldo = self.pega_saldo_comparacao();
+        let mut acertos: Vec<Precisao> = vec![];
 
         for i in 0..5 {
-            let letra_tentativa = &chars[i];
-            let letra_comp = &self.letras[i].letra;
+            let letra_tentativa = &chars_tentativa[i];
+            let letra_comp = &chars_comp[i];
             let precisao: Precisao;
 
             if letra_tentativa == letra_comp {
                 precisao = Precisao::LetraCertaPosicaoCerta;
             } else {
-                precisao = Precisao::TudoErrado;
+                let saldo_restante = saldo.entry(*letra_tentativa).or_insert(0);
+
+                if *saldo_restante <= 0 {
+                    precisao = Precisao::TudoErrado;
+                } else {
+                    precisao = Precisao::LetraCertaPosicaoErrada;
+                }
             }
 
-            letras.push(Letra {
-                letra: *letra_tentativa,
-                precisao,
-            });
+            saldo.entry(*letra_tentativa).and_modify(|q| *q -= 1);
+            acertos.push(precisao);
         }
 
-        return PalavraComparavel { palavra, letras };
+        return PalavraComparavel {
+            palavra,
+            palavra_exibicao,
+            acertos,
+        };
     }
 
     pub fn esta_tudo_certo(&self) -> bool {
         return self
-            .letras
+            .acertos
             .iter()
-            .filter(|l| matches!(l.precisao, Precisao::LetraCertaPosicaoCerta))
+            .filter(|l| matches!(l, Precisao::LetraCertaPosicaoCerta))
             .count()
             == 5;
     }
