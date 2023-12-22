@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, vec};
+use std::{collections::HashMap, fmt};
 
 const VERDE: &str = "\x1b[32m";
 const AMARELO: &str = "\x1b[33m";
@@ -7,7 +7,7 @@ const NORMAL: &str = "\x1b[0m";
 enum Precisao {
     LetraCertaPosicaoCerta,
     LetraCertaPosicaoErrada,
-    TudoErrado,
+    TudoErradoOuExcesso,
 }
 
 impl Precisao {
@@ -15,7 +15,7 @@ impl Precisao {
         let mut letra_colorida = match &self {
             Precisao::LetraCertaPosicaoCerta => String::from(VERDE),
             Precisao::LetraCertaPosicaoErrada => String::from(AMARELO),
-            Precisao::TudoErrado => String::from(NORMAL),
+            Precisao::TudoErradoOuExcesso => String::from(NORMAL),
         };
         letra_colorida.push(letra);
         letra_colorida.push_str(NORMAL);
@@ -66,6 +66,7 @@ impl PalavraComparavel {
         let mut saldo = self.pega_saldo_comparacao();
         let mut acertos: Vec<Precisao> = vec![];
 
+        // primeiro vê o que está certo, e popula uns placeholders
         for i in 0..5 {
             let letra_tentativa = &chars_tentativa[i];
             let letra_comp = &chars_comp[i];
@@ -73,18 +74,24 @@ impl PalavraComparavel {
 
             if letra_tentativa == letra_comp {
                 precisao = Precisao::LetraCertaPosicaoCerta;
+                saldo.entry(*letra_tentativa).and_modify(|q| *q -= 1);
             } else {
-                let saldo_restante = saldo.entry(*letra_tentativa).or_insert(0);
-
-                if *saldo_restante <= 0 {
-                    precisao = Precisao::TudoErrado;
-                } else {
-                    precisao = Precisao::LetraCertaPosicaoErrada;
-                }
+                precisao = Precisao::TudoErradoOuExcesso;
             }
 
-            saldo.entry(*letra_tentativa).and_modify(|q| *q -= 1);
             acertos.push(precisao);
+        }
+
+        // depois vê o que tá meio certo, ou absolutamente errado
+        for i in 0..5 {
+            let letra_tentativa = &chars_tentativa[i];
+            let letra_comp = &chars_comp[i];
+            let saldo_restante = saldo.entry(*letra_tentativa).or_insert(0);
+
+            if letra_tentativa != letra_comp && *saldo_restante > 0 {
+                acertos[i] = Precisao::LetraCertaPosicaoErrada;
+                saldo.entry(*letra_tentativa).and_modify(|q| *q -= 1);
+            }
         }
 
         return PalavraComparavel {
