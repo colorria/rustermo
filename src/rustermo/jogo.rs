@@ -37,13 +37,11 @@ impl<'a> Jogo<'a> {
     pub fn cria(palavras: &'a HashMap<String, String>, qtde_tentativas: usize) -> Self {
         let index_aleatorio = rand::thread_rng().gen_range(0..palavras.len());
         let palavra = palavras.keys().nth(index_aleatorio).unwrap().clone();
+        let palavra_exibicao = palavras.values().nth(index_aleatorio).unwrap().clone();
 
         return Jogo {
             banco_de_palavras: palavras,
-            palavra: PalavraComparavel::cria(
-                palavra.clone(),
-                palavras.get(&palavra).unwrap().clone(),
-            ),
+            palavra: PalavraComparavel::cria(palavra, palavra_exibicao),
             tentativas: vec![],
             qtde_tentativas,
         };

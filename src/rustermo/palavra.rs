@@ -4,6 +4,7 @@ const VERDE: &str = "\x1b[32m";
 const AMARELO: &str = "\x1b[33m";
 const NORMAL: &str = "\x1b[0m";
 
+#[derive(Clone)]
 enum Precisao {
     LetraCertaPosicaoCerta,
     LetraCertaPosicaoErrada,
@@ -44,7 +45,7 @@ impl fmt::Display for PalavraComparavel {
 
 impl PalavraComparavel {
     pub fn cria(palavra: String, palavra_exibicao: String) -> Self {
-        let acertos: Vec<Precisao> = vec![];
+        let acertos: Vec<Precisao> = vec![Precisao::LetraCertaPosicaoCerta; 5];
         return PalavraComparavel {
             palavra,
             palavra_exibicao,
