@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt};
 
 const VERDE: &str = "\x1b[32m";
-const AMARELO: &str = "\x1b[33m";
+const AMARELO: &str = "\x1b[93m";
 const NORMAL: &str = "\x1b[0m";
 
 #[derive(Clone)]
